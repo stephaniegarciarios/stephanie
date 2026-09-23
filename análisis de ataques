@@ -1,0 +1,119 @@
+#include <stdio.h>
+#include <string.h>
+
+// ============== CONSTANTES ==============
+#define MAX_EQUIPOS      6
+#define MAX_EVENTOS     30
+#define TIPOS_EVENTOS    4
+#define UMBRAL           3   // X = 3 según especificación
+
+// ============== TIPOS DE EVENTO ==============
+typedef enum {
+    ACCESO_CORRECTO,
+    CONTRASENA_INCORRECTA,
+    USUARIO_INEXISTENTE,
+    ACCESO_BLOQUEADO
+} TipoEvento;
+
+const char* nombreTipo[TIPOS_EVENTOS] = {
+    "Acceso correcto",
+    "Contraseña incorrecta",
+    "Usuario inexistente",
+    "Acceso bloqueado"
+};
+
+const char* nombreEquipo[MAX_EQUIPOS] = {
+    "PC-01", "PC-02", "PC-03", "PC-04", "PC-05", "PC-06"
+};
+
+// ============== FUNCIONES ==============
+
+// PASO POR VALOR: valida y devuelve índice de columna
+int clasificarEvento(int codigo) {
+    if (codigo >= 0 && codigo < TIPOS_EVENTOS)
+        return codigo;
+    return -1; // código inválido
+}
+
+// PASO POR REFERENCIA: incrementa el contador directamente
+void actualizarContador(int *contador) {
+    (*contador)++;
+}
+
+// ============== PROGRAMA PRINCIPAL ==============
+int main() {
+    // ---------- ARREGLOS UNIDIMENSIONALES: LOG DE EVENTOS ----------
+    int equipoLog[MAX_EVENTOS] = {
+        0,0,0,0,0,0,0,
+        1,1,1,1,1,1,1,1,1,1,
+        2,2,2,2,2,
+        3,3,3,3,3,3,3,3
+    };
+
+    int tipoLog[MAX_EVENTOS] = {
+        0,0,0,0,0,0,1,
+        0,1,1,1,1,1,2,2,3,1,1,
+        0,0,0,0,2,
+        1,1,1,2,2,2,3,0
+    };
+
+    int totalRegistrados = 30;
+
+    // ---------- ARREGLO BIDIMENSIONAL: MATRIZ ----------
+    int matriz[MAX_EQUIPOS][TIPOS_EVENTOS] = {0};
+
+    // ---------- RECORRIDO CON APUNTADORES ----------
+    int *ptrEquipo = equipoLog;
+    int *ptrTipo   = tipoLog;
+    int *ptrBase   = &matriz[0][0];
+
+    for (int i = 0; i < totalRegistrados; i++) {
+        int eq  = *(ptrEquipo + i);
+        int cod = *(ptrTipo   + i);
+
+        int col = clasificarEvento(cod); // Paso POR VALOR
+        if (col != -1) {
+            int fila = eq;
+            int *celda = ptrBase + fila * TIPOS_EVENTOS + col;
+            actualizarContador(celda);     // Paso POR REFERENCIA
+        }
+    }
+
+    // ---------- IMPRIMIR REGISTRO COMPLETO ----------
+    printf("==================================================\n");
+    printf("        REGISTRO COMPLETO DE EVENTOS              \n");
+    printf("==================================================\n");
+    for (int i = 0; i < totalRegistrados; i++) {
+        printf("Evento %2d | %s | %s\n",
+               i + 1,
+               nombreEquipo[equipoLog[i]],
+               nombreTipo[tipoLog[i]]);
+    }
+
+    // ---------- IMPRIMIR RESUMEN POR EQUIPO ----------
+    printf("\n\n==================================================\n");
+    printf("           RESUMEN POR EQUIPO                     \n");
+    printf("==================================================\n");
+    printf("Equipo   | AccOk | CtlErr | UsrNo | Bloq | Fallos | Estado\n");
+    printf("---------|-------|--------|-------|------|--------|----------------\n");
+
+    for (int f = 0; f < MAX_EQUIPOS; f++) {
+        int ok      = matriz[f][0];
+        int ctlErr  = matriz[f][1];
+        int usrNo   = matriz[f][2];
+        int bloq    = matriz[f][3];
+        int fallos  = ctlErr + usrNo;
+        char estado[15];
+
+        // Regla de detección: MÁS DE 3 → sospechoso
+        if (fallos > UMBRAL)
+            strcpy(estado, "⚠️ SOSPECHOSO");
+        else
+            strcpy(estado, "✅ NORMAL");
+
+        printf("%s | %5d | %6d | %5d | %4d | %6d | %s\n",
+               nombreEquipo[f], ok, ctlErr, usrNo, bloq, fallos, estado);
+    }
+
+    return 0;
+}
